@@ -1,0 +1,243 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>折线图</title>
+    <style>
+      .container
+      {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        margin: auto;
+        background-color: white;
+      }
+
+      .lineChart
+      {
+        position: absolute;
+        top: 120px;
+        left: 100px;
+        width: 50%;
+        height: 50%;
+        border: 1px solid #0ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="lineChart" id='line'>
+      </div>
+    </div>
+    <script type="text/javascript" src="jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="echarts.js"></script>
+    <script>
+
+      //用mousedown、mousemove和mouseup完成div元素的移动和宽高的变化
+      $("document").ready(function()
+        {
+          var levelMouseDown = false;    //水平变化
+          var verticalMouseDown = false  //垂直变化
+          var inclineMouseDown = false   //对角线变化
+          var moveMouseDown = false      //元素移动
+          var borderLen = 2     //边框长度
+          var eleLeft = $('.lineChart').offset().left;          //元素离浏览器左边沿的距离
+          var eleTop = $('.lineChart').offset().top;            //元素离浏览器上边沿的距离
+          var remainWidth; //余下的部分宽
+          var remainHeight;//余下的部分高
+
+          $('.lineChart').bind(
+            {
+              mousedown: function(e)
+              {
+                var ele = $(this);
+                var rightPos = eleLeft + ele.width() + borderLen;
+                var bottomPos = eleTop + ele.height() + borderLen;
+
+                if((rightPos + 10 >= e.pageX && e.pageX + 10 >= rightPos) && (bottomPos + 10 >= e.pageY && e.pageY + 10 >= bottomPos))    //当光标在右下角按下时
+                {
+                  inclineMouseDown = true;
+                }
+                else if(rightPos + 10 >= e.pageX && e.pageX + 10 >= rightPos)     //当光标在元素边框右边沿按下鼠标时
+                {
+                  levelMouseDown = true;
+                }
+                else if(bottomPos + 10 >= e.pageY && e.pageY + 10 >= bottomPos)   //当光标在元素边框下边沿按下鼠标时
+                {
+                  verticalMouseDown = true;
+                }
+                else                                                   //都不是时准备移动元且改变视觉
+                {
+                  moveMouseDown = true;
+                  ele.css('opacity', '0.5');
+                  remainWidth = e.pageX - eleLeft;
+                  remainHeight = e.pageY - eleTop;
+                }
+              }, 
+
+              mouseup: function(e)
+              {
+                var ele = $('.lineChart');
+                if(moveMouseDown)
+                {
+                  moveMouseDown = false;
+                  ele.css('opacity','1');
+                }
+              }
+            }
+          );
+
+          $('body').bind(
+            {
+              mousemove: function(e)
+              {
+                var ele = $('.lineChart');
+                var rightPos = eleLeft + ele.width() + borderLen;
+                var bottomPos = eleTop + ele.height() + borderLen;
+
+                if(!moveMouseDown)
+                {
+                  if((rightPos + 10 >= e.pageX && e.pageX + 10 >= rightPos) && (bottomPos + 10 >= e.pageY && e.pageY + 10 >= bottomPos))      //当光标在右下角时改变鼠标形状
+                  {
+                    ele.css('cursor', 'se-resize' );
+                  }
+                  else if(rightPos + 10 >= e.pageX && e.pageX + 10 >= rightPos)     //当鼠标在元素右边沿改变光标形状
+                  {
+                    ele.css('cursor', 'e-resize');
+                  }
+                  else if(bottomPos + 10 >= e.pageY && e.pageY + 10 >= bottomPos)   //当光标在元素的下边沿是改变光标形状
+                  {
+                    ele.css('cursor', 'n-resize');
+                  }
+                  else
+                  {
+                    ele.css('cursor','default');
+                  }
+                }
+                if(moveMouseDown)
+                {
+                  eleLeft = e.pageX - remainWidth;
+                  eleTop = e.pageY - remainHeight;
+                  ele.css('top', eleTop).css('left', eleLeft);
+                }
+                else
+                {
+                  if(levelMouseDown)                //改变元素的宽
+                  {
+                    ele.width((e.pageX - eleLeft - borderLen) + 'px'); 
+                  }
+                  else if(verticalMouseDown)      //改变元素的高
+                  {
+                    ele.height((e.pageY - eleTop - borderLen) + 'px');
+                  }
+                  else if(inclineMouseDown)        //改变元素的宽和高
+                  {
+                    ele.width((e.pageX - eleLeft - borderLen) + 'px'); 
+                    ele.height((e.pageY - eleTop - borderLen) + 'px');
+                  }
+                }
+
+              },
+
+              mouseup:function(e)
+              {
+                levelMouseDown = false;
+                verticalMouseDown = false;
+                inclineMouseDown = false;
+              }
+            });
+
+            $('.lineChart').resize(function()        //当div元素大小变化时，折线图跟着变化
+            {
+              myCharts.resize();
+            });
+        });
+
+        
+       var myCharts =  echarts.init(document.getElementById('line'));
+       var option = 
+       {
+            title: {text: 'Line Chart'},
+            tooltip: {},
+            xAxis: {},
+            yAxis: {},
+            series: 
+            [{
+                type: 'line',
+                smooth: true,
+                data: [[12, 5], [24, 20], [36, 36], [48, 10], [60, 10], [72, 20]]
+            }]
+       };
+       
+       myCharts.setOption(option);
+
+       //jQuery监听div元素高宽的插件
+       (function($, h, c) {
+			var a = $([]), e = $.resize = $.extend($.resize, {}), i, k = "setTimeout", j = "resize", d = j
+					+ "-special-event", b = "delay", f = "throttleWindow";
+			e[b] = 350;
+			e[f] = true;
+			$.event.special[j] = {
+				setup : function() {
+					if (!e[f] && this[k]) {
+						return false
+					}
+					var l = $(this);
+					a = a.add(l);
+					$.data(this, d, {
+						w : l.width(),
+						h : l.height()
+					});
+					if (a.length === 1) {
+						g()
+					}
+				},
+				teardown : function() {
+					if (!e[f] && this[k]) {
+						return false
+					}
+					var l = $(this);
+					a = a.not(l);
+					l.removeData(d);
+					if (!a.length) {
+						clearTimeout(i)
+					}
+				},
+				add : function(l) {
+					if (!e[f] && this[k]) {
+						return false
+					}
+					var n;
+					function m(s, o, p) {
+						var q = $(this), r = $.data(this, d);
+						r.w = o !== c ? o : q.width();
+						r.h = p !== c ? p : q.height();
+						n.apply(this, arguments)
+					}
+					if ($.isFunction(l)) {
+						n = l;
+						return m
+					} else {
+						n = l.handler;
+						l.handler = m
+					}
+				}
+			};
+			function g() {
+				i = h[k](function() {
+					a.each(function() {
+						var n = $(this), m = n.width(), l = n.height(), o = $
+								.data(this, d);
+						if (m !== o.w || l !== o.h) {
+							n.trigger(j, [ o.w = m, o.h = l ])
+						}
+					});
+					g()
+				}, e[b])
+			}
+		})(jQuery, this);
+
+    </script>
+
+  </body>
+  </html>
